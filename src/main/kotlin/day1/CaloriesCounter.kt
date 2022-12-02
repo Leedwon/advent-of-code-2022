@@ -2,7 +2,7 @@ package day1
 
 import util.readFileLines
 
-private const val inputFile = "/day_1_1.txt"
+private const val inputFile = "/day1.txt"
 
 fun solveDay11() {
     val calories = sumElvesCalories(inputFile)
