@@ -59,7 +59,7 @@ private fun Node.postorder(operation: (Node) -> Unit) {
 /**
  * @return root Directory
  */
-private fun buildFileSystem(input: List<String>): Node.Directory {
+fun buildFileSystem(input: List<String>): Node.Directory {
     val stack = ArrayDeque(input)
 
     val head = stack.removeFirst()
