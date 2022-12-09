@@ -10,6 +10,8 @@ import day5.solveDay51
 import day5.solveDay52
 import day6.solveDay61
 import day6.solveDay62
+import day7.solveDay71
+import day7.solveDay72
 
 fun main() {
     solveDay11()
@@ -24,4 +26,6 @@ fun main() {
     solveDay52()
     solveDay61()
     solveDay62()
+    solveDay71()
+    solveDay72()
 }
