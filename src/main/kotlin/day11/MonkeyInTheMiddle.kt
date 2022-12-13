@@ -1,6 +1,7 @@
 package day11
 
 import util.readFileLines
+import java.math.BigDecimal
 
 private const val fileName = "/day11.txt"
 
@@ -22,10 +23,12 @@ fun solveDay112() {
     println(result)
 }
 
-fun calculateMonkeyBusiness(monkeys: List<Monkey>, rounds: Int, calmingFactor: Int): Int {
+fun calculateMonkeyBusiness(monkeys: List<Monkey>, rounds: Int, calmingFactor: Int): BigDecimal {
+    val lcm = monkeys.map { it.divisionTest.divisibleBy }.reduce { acc, i -> acc * i }
+
     repeat(rounds) {
         monkeys.forEach { monkey ->
-            val thrownItems = monkey.throwItems(calmingFactor)
+            val thrownItems = monkey.throwItems(calmingFactor, lcm)
             thrownItems.forEach { item ->
                 monkeys.first { it.id == item.monkeyId }.addItem(item)
             }
@@ -41,18 +44,22 @@ fun calculateMonkeyBusiness(monkeys: List<Monkey>, rounds: Int, calmingFactor: I
 
 data class Monkey(
     val id: Int,
-    val items: ArrayDeque<Int>,
+    val items: ArrayDeque<Long>,
     val worryLevelFactory: WorryLevelFactory,
     val divisionTest: DivisionTest
 ) {
 
-    var inspectionCount = 0
+    var inspectionCount: BigDecimal = BigDecimal.ZERO
         private set
 
-    private fun throwItem(calmingFactor: Int): ThrowData? {
+    private fun throwItem(calmingFactor: Int, lcm: Int): ThrowData? {
         val item = items.removeFirstOrNull() ?: return null
-        val worryLevel = worryLevelFactory.newWorryLevel(item).floorDiv(calmingFactor)
+        val worryLevel = worryLevelFactory.newWorryLevel(item).floorDiv(calmingFactor) % lcm
         val monkeyId = divisionTest.performTest(worryLevel)
+
+        if (worryLevel < 0) {
+            println("fail")
+        }
 
         inspectionCount++
         return ThrowData(
@@ -61,10 +68,10 @@ data class Monkey(
         )
     }
 
-    fun throwItems(calmingFactor: Int): List<ThrowData> {
+    fun throwItems(calmingFactor: Int, lcm: Int): List<ThrowData> {
         val result = mutableListOf<ThrowData>()
         while (items.isNotEmpty()) {
-            throwItem(calmingFactor)?.let { result.add(it) }
+            throwItem(calmingFactor, lcm)?.let { result.add(it) }
         }
         return result
     }
@@ -75,7 +82,7 @@ data class Monkey(
 }
 
 data class ThrowData(
-    val item: Int,
+    val item: Long,
     val monkeyId: Int
 )
 
@@ -98,8 +105,8 @@ fun String.parseMonkeyId(): Int {
     return this.dropLast(1).last().toString().toInt()
 }
 
-fun String.parseMonkeyItems(): ArrayDeque<Int> {
-    val initialState = this.split(":")[1].trim().split(",").map { it.trim().toInt() }
+fun String.parseMonkeyItems(): ArrayDeque<Long> {
+    val initialState = this.split(":")[1].trim().split(",").map { it.trim().toLong() }
     return ArrayDeque(initialState)
 }
 
@@ -126,7 +133,7 @@ fun List<String>.parseDivisionTest(): DivisionTest {
 private fun String.parseParamParsingStrategy(): WorryLevelFactory.ParamParsingStrategy {
     return when (this) {
         "old" -> WorryLevelFactory.ParamParsingStrategy.Old
-        else -> WorryLevelFactory.ParamParsingStrategy.Value(this.toInt())
+        else -> WorryLevelFactory.ParamParsingStrategy.Value(this.toLong())
     }
 }
 
@@ -141,15 +148,15 @@ private fun String.parseOperation(): Operation {
 }
 
 data class DivisionTest(
-    private val divisibleBy: Int,
+    val divisibleBy: Int,
     private val onTrue: Int,
     private val onFalse: Int,
 ) {
     /**
      * @return id of monkey to which this monkey throws items
      */
-    fun performTest(worryLevel: Int): Int {
-        return if (worryLevel % divisibleBy == 0) onTrue else onFalse
+    fun performTest(worryLevel: Long): Int {
+        return if (worryLevel % divisibleBy == 0L) onTrue else onFalse
     }
 }
 
@@ -160,7 +167,7 @@ data class WorryLevelFactory(
     private val operation: Operation
 ) {
 
-    fun newWorryLevel(oldWorryLevel: Int): Int {
+    fun newWorryLevel(oldWorryLevel: Long): Long {
         val a = firstParamParsingStrategy.getValue(oldWorryLevel)
         val b = secondParamParsingStrategy.getValue(oldWorryLevel)
         return operation.execute(a, b)
@@ -168,9 +175,9 @@ data class WorryLevelFactory(
 
     sealed class ParamParsingStrategy {
         object Old : ParamParsingStrategy()
-        data class Value(val value: Int) : ParamParsingStrategy()
+        data class Value(val value: Long) : ParamParsingStrategy()
 
-        fun getValue(oldWorryLevel: Int): Int {
+        fun getValue(oldWorryLevel: Long): Long {
             return when (this) {
                 Old -> oldWorryLevel
                 is Value -> value
@@ -180,21 +187,21 @@ data class WorryLevelFactory(
 }
 
 sealed interface Operation {
-    fun execute(a: Int, b: Int): Int
+    fun execute(a: Long, b: Long): Long
 
     object Addition : Operation {
-        override fun execute(a: Int, b: Int): Int = a + b
+        override fun execute(a: Long, b: Long): Long = a + b
     }
 
     object Subtraction : Operation {
-        override fun execute(a: Int, b: Int): Int = a - b
+        override fun execute(a: Long, b: Long): Long = a - b
     }
 
     object Multiplication : Operation {
-        override fun execute(a: Int, b: Int): Int = a * b
+        override fun execute(a: Long, b: Long): Long = a * b
     }
 
     object Division : Operation {
-        override fun execute(a: Int, b: Int): Int = a / b
+        override fun execute(a: Long, b: Long): Long = a / b
     }
 }

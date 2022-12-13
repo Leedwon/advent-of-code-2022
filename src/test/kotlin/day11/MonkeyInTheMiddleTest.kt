@@ -26,7 +26,7 @@ class MonkeyInTheMiddleTest {
 
     @Test
     fun `should parse monkey items`() {
-        val expected = ArrayDeque(listOf(79, 98))
+        val expected = ArrayDeque(listOf(79L, 98L))
 
         val actual = actual[1].parseMonkeyItems()
         assertEquals(expected, actual)
@@ -113,13 +113,13 @@ Monkey 1:
     fun `should solve test case`() {
         val monkeys = readFileLines("/test_day11.txt").parseMonkeys()
         val actual = calculateMonkeyBusiness(monkeys, 20, 3)
-        assertEquals(10605, actual)
+        assertEquals(10605.toBigDecimal(), actual)
     }
 
     @Test
     fun `should solve test case with huge numbers`() {
         val monkeys = readFileLines("/test_day11.txt").parseMonkeys()
         val actual = calculateMonkeyBusiness(monkeys, 10_000, 1)
-        assertEquals(BigDecimal("2713310158"), actual.toBigDecimal())
+        assertEquals(BigDecimal("2713310158"), actual)
     }
 }
