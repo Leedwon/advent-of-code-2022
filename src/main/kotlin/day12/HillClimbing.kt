@@ -9,7 +9,24 @@ fun solveDay121() {
     val input = readFileLines(fileName)
 
     val nodes = input.toNodes()
-    val pathLength = calculateShortestPath(nodes = nodes, start = nodes.first { it.isStart })
+    val pathLength = calculateShortestPath(nodes = nodes, startPosition = nodes.first { it.isStart }.position)
+    println(pathLength)
+}
+
+fun solveDay122() {
+    val input = readFileLines(fileName)
+
+    val nodes = input.toNodes()
+
+    val startingPoints = nodes.filter { it.elevation == 'a' }
+    val pathLength = startingPoints
+        .map { startingPoint ->
+            calculateShortestPath(
+                nodes = input.toNodes().map { it.copy(isStart = it.position == startingPoint.position) },
+                startPosition = startingPoint.position
+            )
+        }
+        .minByOrNull { it }!!
     println(pathLength)
 }
 
@@ -17,7 +34,8 @@ fun solveDay121() {
  * @return number of nodes visited from start to destination
  * Using A* Search Algorithm
  */
-private fun calculateShortestPath(nodes: List<Node>, start: Node): Int {
+private fun calculateShortestPath(nodes: List<Node>, startPosition: Position): Int {
+    val start = nodes.first { it.position == startPosition }
     val destination = nodes.first { it.isDestination }
 
     val open = mutableListOf(start)
@@ -34,7 +52,7 @@ private fun calculateShortestPath(nodes: List<Node>, start: Node): Int {
         }
 
         neighbours.forEach { node ->
-            val distanceFromStart = node.computeDistanceFromStart(next)
+            val distanceFromStart = node.computeDistanceFromStart(parent = next, start = start)
             val distanceFromDestination = node.computeDistanceFromDestination(destination)
 
             val cost = distanceFromStart + distanceFromDestination
@@ -59,6 +77,10 @@ private fun calculateShortestPath(nodes: List<Node>, start: Node): Int {
         closed.add(next)
     }
 
+    if (destination.parent == null) {
+        return Int.MAX_VALUE // path to parent not found
+    }
+
     var pathLength = 0
     var next = destination
     while (next.parent != null) {
@@ -72,8 +94,8 @@ private fun Node.canMoveTo(other: Node): Boolean {
     return other.elevation - elevation <= 1
 }
 
-private fun Node.computeDistanceFromStart(parent: Node): Int {
-    return if (parent.isStart) 1 else parent.distanceFromStart + 1
+private fun Node.computeDistanceFromStart(parent: Node, start: Node): Int {
+    return if (parent.position == start.position) 1 else parent.distanceFromStart + 1
 }
 
 private fun Node.computeDistanceFromDestination(destination: Node): Int {
