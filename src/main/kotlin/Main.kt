@@ -6,6 +6,8 @@ import day11.solveDay111
 import day11.solveDay112
 import day12.solveDay121
 import day12.solveDay122
+import day13.solveDay131
+import day13.solveDay132
 import day2.solveDay21
 import day2.solveDay22
 import day3.solveDay31
@@ -47,5 +49,7 @@ fun main() {
     solveDay111()
     solveDay112()
     solveDay121()
-    solveDay122()
+//    solveDay122() // should be optimized consumes too much time
+    solveDay131()
+    solveDay132()
 }
