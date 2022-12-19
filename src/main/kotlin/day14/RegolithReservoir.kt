@@ -9,17 +9,25 @@ fun solveDay141() {
     val lines = readFileLines(fileName)
 
     val cave = initializeCave(lines)
-    val result = cave.countSandBeforeItFallsIntoAbyss()
+    val result = cave.countSand()
     println(result)
 }
 
-fun initializeCave(input: List<String>, entrancePosition: Position = Position(500, 0)): Cave {
+fun solveDay142() {
+    val lines = readFileLines(fileName)
+
+    val cave = initializeCave(lines, floorHeight = 2)
+    val result = cave.countSand(hasFloor = true) + 1 // +1 for entrance
+    println(result)
+}
+
+fun initializeCave(input: List<String>, entrancePosition: Position = Position(500, 0), floorHeight: Int? = null): Cave {
     val rocks = input.flatMap { it.parseRockPath() }
 
     val xStart = minOf(entrancePosition.x, rocks.minByOrNull { it.x }!!.x)
     val xEnd = maxOf(entrancePosition.x, rocks.maxByOrNull { it.x }!!.x)
     val yStart = minOf(entrancePosition.y, rocks.minByOrNull { it.y }!!.y)
-    val yEnd = maxOf(entrancePosition.y, rocks.maxByOrNull { it.y }!!.y)
+    val yEnd = maxOf(entrancePosition.y, rocks.maxByOrNull { it.y }!!.y) + (floorHeight ?: 0)
 
     val columns = xEnd - xStart + 1
     val rows = yEnd - yStart + 1
@@ -31,9 +39,10 @@ fun initializeCave(input: List<String>, entrancePosition: Position = Position(50
         repeat(rows) { row ->
             val row = yStart + row
             val position = Position(x = column, y = row)
-            val type = when (position) {
-                in rocks -> Type.Rock
-                entrancePosition -> Type.Entrance
+            val type = when {
+                floorHeight != null && position.y == yEnd -> Type.Rock
+                position in rocks -> Type.Rock
+                position == entrancePosition -> Type.Entrance
                 else -> Type.Air
             }
             map[position] = type
@@ -128,39 +137,62 @@ data class Cave(
     /**
      * @return position to which sand falls or null if it can't move anymore
      */
-    private fun Position.sandNextPositionOrNull(): Position? {
+    private fun Position.sandNextPositionOrNull(hasFloor: Boolean): Position? {
         val down = Position(x, y + 1)
         val leftDown = Position(x - 1, y + 1)
         val rightDown = Position(x + 1, y + 1)
         return when {
-            positions[down] == Type.Air -> down
-            positions[leftDown] == Type.Air -> leftDown
-            positions[rightDown] == Type.Air -> rightDown
+            positions[down] == Type.Air || (positions[down] == null && hasFloor && (x - 1 < xStart || x + 1 > xEnd) && y + 1 < yEnd) -> down
+            positions[leftDown] == Type.Air || (positions[leftDown] == null && hasFloor && (x - 1 < xStart || x + 1 > xEnd) && y + 1 < yEnd) -> leftDown
+            positions[rightDown] == Type.Air || (positions[rightDown] == null && hasFloor && (x - 1 < xStart || x + 1 > xEnd) && y + 1 < yEnd) -> rightDown
             else -> null
         }
     }
 
     /**
-     * @return true when sand landed somewhere falls if felt into abyss
+     * @return true when sand landed somewhere false if felt into abyss or blocked the entrance, so there will be no longer place for sand to fall into.
      */
-    private fun dropSand(): Boolean {
+    private fun dropSand(hasFloor: Boolean = false): Boolean {
         var sandPosition = start
-        var next = sandPosition.sandNextPositionOrNull()
+        var next = sandPosition.sandNextPositionOrNull(hasFloor)
         while (next != null) {
             sandPosition = next
-            if (sandPosition.willFallIntoAbyss()) return false
-            next = sandPosition.sandNextPositionOrNull()
+
+            if (!hasFloor && sandPosition.willFallIntoAbyss()) return false
+            next = sandPosition.sandNextPositionOrNull(hasFloor)
         }
         positions[sandPosition] = Type.Sand
-        return true
+        return sandPosition != start
     }
 
-    fun countSandBeforeItFallsIntoAbyss(): Int {
+    fun countSand(hasFloor: Boolean = false): Int {
         var sandUnits = 0
-        while (dropSand()) {
+        while (dropSand(hasFloor)) {
             sandUnits++
         }
         return sandUnits
+    }
+
+    fun print() {
+        val xStart = positions.keys.minByOrNull { it.x }!!.x
+        val xEnd = positions.keys.maxByOrNull { it.x }!!.x
+        val yStart = positions.keys.minByOrNull { it.y }!!.y
+        val yEnd = positions.keys.maxByOrNull { it.y }!!.y
+
+        IntRange(yStart, yEnd).forEach { y ->
+            IntRange(xStart, xEnd).forEach { x ->
+                print(
+                    when (positions[Position(x, y)]) {
+                        Type.Rock -> "#"
+                        Type.Air -> "."
+                        Type.Sand -> "o"
+                        Type.Entrance -> "+"
+                        null -> ","
+                    }
+                )
+            }
+            println()
+        }
     }
 }
 
