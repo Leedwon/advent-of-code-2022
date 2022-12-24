@@ -10,12 +10,67 @@ private const val fileName = "/day15.txt"
 fun solveDay151() {
     val lines = readFileLines(fileName)
 
-    val xRegex = Regex("x=.\\d*")
-    val yRegex = Regex("y=.\\d*")
 
     val y = 2_000_000
 
-    val data = lines
+    val data = parseData(lines)
+
+    val minX = data.minOf { min(it.sensor.first - it.radius, it.beacon.first) }
+    val maxX = data.maxOf { max(it.sensor.first + it.radius, it.beacon.first) }
+
+
+    val result = (minX..maxX).count {
+        val position = it to y
+
+        data.any { data ->
+            !position.canBeBeacon(sensor = data.sensor, beacon = data.beacon, closestBeaconRadius = data.radius)
+        }
+    }
+
+    println(result)
+}
+
+fun solveDay152() {
+    val lines = readFileLines(fileName)
+
+    val data = parseData(lines)
+
+    val yMax = 4_000_000
+
+    var finalX: Int? = null
+    var finalY: Int? = null
+
+    for (y in (0..yMax)) {
+        val excludedRanges = data.mapNotNull { it.getExcludedXRangeOrNull(y, coerceIn = 0..yMax) }.sortedBy { it.first }
+
+        val range = possibleRangeOrNull(excludedRanges)
+        if (range != null) {
+            finalX = range.first
+            finalY = y
+            break
+        }
+    }
+
+    val result = finalX!! * 4_000_000L + finalY!!
+    println(result)
+}
+
+private fun possibleRangeOrNull(excludedRanges: List<IntRange>): IntRange? {
+    excludedRanges.reduce { acc, intRange ->
+        when {
+            intRange.first > acc.last -> return acc.last + 1 until intRange.first
+            intRange.first <= acc.last && intRange.last >= acc.last -> acc.first..intRange.last
+            else -> acc
+        }
+    }
+    return null
+}
+
+private fun parseData(lines: List<String>): List<Data> {
+    val xRegex = Regex("x=.\\d*")
+    val yRegex = Regex("y=.\\d*")
+
+    return lines
         .map {
             val xMatches = xRegex.findAll(it).toList()
             val yMatches = yRegex.findAll(it).toList()
@@ -24,22 +79,17 @@ fun solveDay151() {
             val beacon = xMatches[1].value.getIntValue() to yMatches[1].value.getIntValue()
             Data(sensor, beacon)
         }
+}
 
-    val minX = data.minOf { min(it.sensor.first - it.radius, it.beacon.first) }
-    val maxX = data.maxOf { max(it.sensor.first + it.radius, it.beacon.first) }
+private fun Data.getExcludedXRangeOrNull(y: Int, coerceIn: IntRange): IntRange? {
+    val excludedXCount = getExcludedXCountFor(y)
+    if (excludedXCount < 0) return null
 
-    val sensorBeaconRadius = data.map { (sensor, beacon) -> (sensor to beacon) to sensor.distanceTo(beacon) }
+    return sensor.first - excludedXCount..sensor.first + excludedXCount.coerceIn(coerceIn)
+}
 
-    val result = (minX..maxX).count {
-        val position = it to y
-
-        sensorBeaconRadius.any { (sensorToBeacon, radius) ->
-            val (sensor, beacon) = sensorToBeacon
-            !position.canBeBeacon(sensor = sensor, beacon = beacon, closestBeaconRadius = radius)
-        }
-    }
-
-    println(result)
+private fun Data.getExcludedXCountFor(y: Int): Int {
+    return radius - abs(sensor.second - y)
 }
 
 private data class Data(

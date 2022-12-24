@@ -11,6 +11,7 @@ import day13.solveDay132
 import day14.solveDay141
 import day14.solveDay142
 import day15.solveDay151
+import day15.solveDay152
 import day2.solveDay21
 import day2.solveDay22
 import day3.solveDay31
@@ -58,4 +59,5 @@ fun main() {
     solveDay141()
     solveDay142()
     solveDay151()
+    solveDay152()
 }
