@@ -55,64 +55,56 @@ fun simulateRockFall(
     val chamberStart = 0
     val chamberEnd = chamberWidth - 1
 
-    var stoppedRocks = mutableListOf<Rock>()
+    val ground = mutableMapOf(
+        0L to 0L,
+        1L to 0L,
+        2L to 0L,
+        3L to 0L,
+        4L to 0L,
+        5L to 0L,
+        6L to 0L
+    )
 
     var nextRockIndex = 0
     var nextShiftIndex = 0
 
+    var cycleFound = false
+    var moves = 0
+
     var rock = rocks[0].shift(2, 4)
 
-    fun printState() {
-        val maxHeight = (stoppedRocks.flatten() + rock).maxOf { it.second }
-        println()
+    val rocksThatHitGround = hashMapOf<>()
 
-        for (height in maxHeight downTo 1L) {
-            print("|")
-            for (width in 0L until chamberWidth) {
-                val cords = width to height
-                print(
-                    when {
-                        cords in rock -> '@'
-                        stoppedRocks.any { cords in it } -> '#'
-                        else -> "."
-                    }
-                )
-            }
-            print("|")
-            println()
-        }
-        println("+-------+")
-    }
-
-    while (stoppedRocks.size < fallenRocksLimit) {
+    while (!cycleFound) {
         val shiftDirection = shifts[nextShiftIndex]
         nextShiftIndex = (nextShiftIndex + 1) % shifts.size
 
         val shifted = rock.shift(x = shiftDirection.shift, y = 0)
-        if (shifted.left >= chamberStart && shifted.right <= chamberEnd && shifted.none { it in stoppedRocks.flatten() }) {
+
+        if (shifted.left >= chamberStart && shifted.right <= chamberEnd && shifted.none { it.second <= ground[it.first]!! }) {
             rock = shifted
         }
 
         val movedDown = rock.shift(x = 0, y = -1)
 
-        val hitGround = movedDown.minOf { it.second } < 1
-        val hitOtherRock = stoppedRocks.any { stoppedRock ->
-            stoppedRock.any { position -> position in movedDown }
-        }
+        val hitGround = movedDown.any { it.second <= ground[it.first]!! }
 
-        if (hitGround || hitOtherRock) {
+        if (hitGround) {
             nextRockIndex = (nextRockIndex + 1) % rocks.size
-            stoppedRocks.add(rock)
 
-            val height = stoppedRocks.flatten().maxOf { it.second }
+            rock.forEach { ground[it.first] = maxOf(ground[it.first]!!, it.second) }
+
+            val height = ground.values.maxOf { it }
 
             rock = rocks[nextRockIndex].shift(2, height + 4)
         } else {
             rock = movedDown
         }
+        moves++
     }
 
-    return stoppedRocks.flatten().maxOf { it.second }
+    val height = ground.values.maxOf { it } // height that is added per cycle
+    return height
 }
 
 val Rock.left: Long
